@@ -27,7 +27,7 @@ import scala.util.control.Breaks._
  Provide Unit-Tests to ensure the functionality of the service. +
 */
 
-object WaterMarkService {
+object waterMarkServiceUtils {
   implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   //Constructors
@@ -90,7 +90,7 @@ object WaterMarkService {
 
   //Use isProcessed to check if a single Document from the original queque has been processed.
   def isProcessed(ticket: Ticket): Boolean = {
-    watermarkedDocs.contains(Ticket)
+    watermarkedDocs.contains(ticket)
   }
 
   //Get a new Doc with a populated watermark.
@@ -129,6 +129,8 @@ object WaterMarkService {
   }
 
   //see unit tests by running waterMarkSpec.scala
+
+  /*
   def main(args: Array[String]) {
     //Mimic an input from STDIN.
     //FIXME! imput is only captured once, not an inifinite stream.
@@ -139,11 +141,17 @@ object WaterMarkService {
       "journal\tThe Journal of cell biology\tRockefeller University Press",
       "book\tA brief history of time\tStephen W Hawking\tScience")
 
-    val listOfTickets: List[Int] = createDocsAndGetTickets(input)
+    val listOfTickets: List[Ticket] = createDocsAndGetTickets(input)
 
     markDocs(documentsMap)
-
-    val poll: Future[?string message or ]
+    println(s"List of tickets for new Documents: ${listOfTickets}")
+    println("")
+    Thread.sleep(3000)
+    println(s"WaterMarked documents : ${watermarkedDocs.toString}")
+  }
+*/
+}
+    //val poll: Future[?string message or ]
 
     /*
     1.we get all the tickets currently in original map- queque
@@ -185,9 +193,3 @@ object WaterMarkService {
     }
     poll.start()
     */
-    println(s"List of tickets for new Documents: ${listOfTickets}")
-    println("")
-    Thread.sleep(3000)
-    println(s"WaterMarked documents : ${watermarkedDocs.toString}")
-  }
-}
