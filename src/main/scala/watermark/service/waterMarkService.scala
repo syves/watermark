@@ -1,3 +1,5 @@
+package watermark.service
+
 import java.util.concurrent.{ExecutorService, ThreadFactory, Executors}
 import scala.concurrent.duration._
 
@@ -59,7 +61,6 @@ object waterMarkServer {
   }
 
   def main(args: Array[String]): Unit =  {
-    //val apiKey = args(0)
     serve.run
   }
 

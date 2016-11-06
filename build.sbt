@@ -6,7 +6,9 @@ libraryDependencies += "org.http4s" %% "http4s-blaze-client" % http4sVersion
 libraryDependencies += "com.google.guava" % "guava" % "19.0-rc1"
 libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.7"
 libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M2"
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.7"
+//incompatable with http4s version, must be getting scalaz from argonaut
+//libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.7"
+
 
 name := "watermark"
 
