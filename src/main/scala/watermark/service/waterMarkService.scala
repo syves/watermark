@@ -13,7 +13,7 @@ import org.http4s._
 import scalaz._, Scalaz._
 
 object waterMarkServer {
-  //import waterMarkServiceUtils._
+  import waterMarkServiceUtils._
 
   val errorResponse: PartialFunction[Throwable, Task[Response]] = {
     case t => InternalServerError(t.toString)
@@ -26,15 +26,16 @@ object waterMarkServer {
     case req @ POST -> Root / "watermark" =>
       (for {
         content <- req.as[String]
-        event   <- doSomethingWithEvent(content)
+        event   <- addToStream(content)
+        ? <- waterMark..
         res     <- Ok("Everything's good")
       } yield res).handleWith(errorResponse)
 
       case req @ POST -> Root / "poll" =>
         (for {
-          content <- req.as[String]
-          event   <- doSomethingWithEvent(content)
-          res     <- Ok("Everything's good")
+          ticket <- req.as[String]
+          event   <- getTicket(ticket)
+          res     <- Ok(Document) //use entity encoder?
         } yield res).handleWith(errorResponse)
       */
   }

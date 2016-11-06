@@ -4,7 +4,7 @@ import scala.concurrent._
 import scala.util.control.Breaks._
 
 //TO Run this file
-//scalac waterMark.scala && scala waterMark.scala
+//sbt waterMarkService.scala, then script: ....
 
 /*
  A global publishing company that publishes books and journals wants to develop
@@ -116,11 +116,6 @@ object waterMarkServiceUtils {
     }
   }
 
-  //condition for polling,
-  def allProcessed(l: List[Ticket]): Boolean = {
-    l.forall(isProcessed)
-  }
-
   //Watermark each doc in the original Map.
   def markDocs(m: collection.immutable.Map[Ticket, Document]): Unit = {
     m.foreach { case (ticket, doc) =>
@@ -128,19 +123,11 @@ object waterMarkServiceUtils {
     }
   }
 
-  //see unit tests by running waterMarkSpec.scala
-
-  /*
-  def main(args: Array[String]) {
-    //Mimic an input from STDIN.
-    //FIXME! imput is only captured once, not an inifinite stream.
-    //We must at least check for incoming data!
-
     val input = List(
       "book\tCosmos\tCarl Sagan\tScience",
       "journal\tThe Journal of cell biology\tRockefeller University Press",
       "book\tA brief history of time\tStephen W Hawking\tScience")
-
+/*
     val listOfTickets: List[Ticket] = createDocsAndGetTickets(input)
 
     markDocs(documentsMap)
@@ -148,48 +135,17 @@ object waterMarkServiceUtils {
     println("")
     Thread.sleep(3000)
     println(s"WaterMarked documents : ${watermarkedDocs.toString}")
-  }
+
 */
 }
-    //val poll: Future[?string message or ]
 
     /*
     1.we get all the tickets currently in original map- queque
-    2. for each check if the Ticket exists in map of watermareked docs.
+    for each check if the Ticket exists in map of watermareked docs.
 
-    Q1. do we want to return all the watermarked docs each time?
-    or a message with the ones yet to be watermarked?
-    Q2. How do we make this non blocking?
-    	while true poll. with a future of results inside?
+    2. do we want to return the watermarked docs each time?
+    or a message if not done?
 
-    -For a given content document the service should return a ticket
-  		which can be used to poll the status of processing. +
- 	-If the watermarking is finished the document can be retrieved with the ticket. +
- 	is this a clue?
- 	....when the ticket is a Future[watermarked] then return, return a future for each Ticket,
- 	Q3...so then are we polling for new tickets as well?
- 	we have to keep checking for new tickets
- 	Q4..what happens when all the tickets are processed?
-    */
-
-    /*
-    ### I was unable to get polling to work without blocking the futures.
-    I look forward to learning more about working with Futures, threads, and AKKA.
-
-    val poll = new Thread {
-      override def run() {
-        breakable {
-          while (true) {
-            Thread.sleep(1000)
-            if (allProcessed(listOfTickets)) break
-            println("Some tickets have not been processed.")
-          }
-        }
-        println("All the tickets have been processed")
-        println(s"List of tickets for new Documents: ${listOfTickets}")
-        println("")
-        println(s"WaterMarked documents : ${watermarkedDocs.toString}")
-      }
-    }
-    poll.start()
+ 	  3. Stream continues to be processes-  we have to keep checking for new tickets
+ 	  Q4..what happens when all the tickets are processed?
     */
