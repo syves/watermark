@@ -2,6 +2,11 @@ package watermark.service
 
 import scala.concurrent._
 import scala.util.control.Breaks._
+import scalaz.concurrent.{Task, Strategy}
+import scalaz._, Scalaz._
+
+//import java.lang._
+//import scala.Predef._
 
 //TO Run this file
 //sbt waterMarkService.scala, then script: ....
@@ -54,7 +59,7 @@ object waterMarkServiceUtils {
   var documentsMap = collection.immutable.Map[Ticket, Document]()
 
   //Creates a Document with an empty watermark.
-  def stringToDoc(s: String): Document = {
+  def stringToDoc(s: String): Task[Document] = Task.delay {
     s.split("\t") match {
       case Array(content, title, author, topic) => new Document(
         content,
@@ -68,6 +73,7 @@ object waterMarkServiceUtils {
         author,
         None,
         emptyW)
+      case x => println("parsing failed")
     }
   }
 
@@ -75,18 +81,12 @@ object waterMarkServiceUtils {
 
   //Stores Document in an immutable Map.
   //The document can be retieved with the key, which is a Ticket of type Int.
-  def genTicketAndDoc(s: String): Ticket = {
+  def genTicket(doc: Document): Task[Ticket] = Task.delay {
     val ticketNum = nextTicketNum
     nextTicketNum += 1
-    val doc = stringToDoc(s)
     documentsMap = documentsMap + (Ticket(ticketNum) -> doc)
     Ticket(ticketNum)
     }
-
-  //Add the incomming docs to the immutable Map.
-  def createDocsAndGetTickets(l: List[String]): List[Ticket] = {
-    l.map (genTicketAndDoc(_))
-  }
 
   //Use isProcessed to check if a single Document from the original queque has been processed.
   def isProcessed(ticket: Ticket): Boolean = {
@@ -127,16 +127,9 @@ object waterMarkServiceUtils {
       "book\tCosmos\tCarl Sagan\tScience",
       "journal\tThe Journal of cell biology\tRockefeller University Press",
       "book\tA brief history of time\tStephen W Hawking\tScience")
-/*
-    val listOfTickets: List[Ticket] = createDocsAndGetTickets(input)
 
-    markDocs(documentsMap)
-    println(s"List of tickets for new Documents: ${listOfTickets}")
-    println("")
-    Thread.sleep(3000)
-    println(s"WaterMarked documents : ${watermarkedDocs.toString}")
+    //markDocs(documentsMap)
 
-*/
 }
 
     /*

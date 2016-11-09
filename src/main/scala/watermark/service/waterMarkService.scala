@@ -6,36 +6,52 @@ import scala.concurrent.duration._
 import org.http4s.headers.`Content-Type`
 import org.http4s.MediaType._
 import org.http4s.server.blaze.BlazeBuilder
+import org.http4s.client.blaze._
 import scalaz.concurrent.{Task, Strategy}
-import org.http4s.server.Server
+//I may want to run as an app, automatic cleanup/shutdown
+import org.http4s.server.{Server, ServerApp}
 import org.http4s.dsl._
 import org.http4s._
+import org.http4s.Uri
 import scalaz._, Scalaz._
 
 object waterMarkServer {
   import waterMarkServiceUtils._
 
   val errorResponse: PartialFunction[Throwable, Task[Response]] = {
-    case t => InternalServerError(t.toString)
+    case t =>
+      t.printStackTrace()
+      InternalServerError(t.toString)
   }
 
+  val client = PooledHttp1Client()
+  //Task[String] represents the asynchronous nature of a client request.
+  val getTicket = client.expect[String]("http://localhost:8080/ticket")
+  val getWaterMark = client.expect[String]("http://localhost:8080/watermark")
+
+  //return a task of response?
+  //HttpService is just a type alias for Kleisli[Task, Request, Response]
   val wms = HttpService {
     case GET -> Root =>
       Ok("Welcome to the watermark service!")
-    /*
-    case req @ POST -> Root / "watermark" =>
-      (for {
-        content <- req.as[String]
-        event   <- addToStream(content)
-        ? <- waterMark..
-        res     <- Ok("Everything's good")
-      } yield res).handleWith(errorResponse)
 
-      case req @ POST -> Root / "poll" =>
+    case req @ POST -> Root / "ticket" =>
+      (for {
+        //content .as[String ]is a Java.lang.String, to.String is a char
+        content <- req.as[String]
+        //event   <- addToStream(content)
+        doc <- stringToDoc(content)
+        ticket <- genTicket(doc)
+        //_ = println("2")
+        res <- Ok(ticket.id.toString)
+        _ = println("3")
+      } yield res).handleWith(errorResponse)
+      
+      /*
+      case req @ POST -> Root / "waterMark" =>
         (for {
           ticket <- req.as[String]
-          event   <- getTicket(ticket)
-          res     <- Ok(Document) //use entity encoder?
+          res   <- markDocs(ducmentMAp)?
         } yield res).handleWith(errorResponse)
       */
   }
@@ -62,7 +78,10 @@ object waterMarkServer {
   }
 
   def main(args: Array[String]): Unit =  {
+    //It is best to run your Task “at the end of the world.”
     serve.run
+    //client.shutdownNow()
+    //server.shutdownNow()
   }
 
   // Lifted from unfiltered Quasar open source library
