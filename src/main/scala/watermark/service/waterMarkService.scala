@@ -35,25 +35,37 @@ object waterMarkServer {
     case GET -> Root =>
       Ok("Welcome to the watermark service!")
 
+    //I think we want to add the tickets to a stream, and process them/ get tickets a synchronously.
+    //but the id's are created for a single object? <- does this require syncronization?
+    //do I need to create a js client or should I use http4s?
+    //1. read http4s docs,
+    //2. akka sink
+    //create js script.
+
     case req @ POST -> Root / "ticket" =>
       (for {
-        //content .as[String ]is a Java.lang.String, to.String is a char
         content <- req.as[String]
         //event   <- addToStream(content)
         doc <- stringToDoc(content)
         ticket <- genTicket(doc)
         //_ = println("2")
+        //## for each element in the stream ....
+        //_ = waterMark(doc)
+
+        //remove this later
+        _ = futureOfDoc(doc, ticket)
+        //_ = println(documentsMap.toString)
+        //_ = println(watermarkedDocs.toString)
         res <- Ok(ticket.id.toString)
-        _ = println("3")
       } yield res).handleWith(errorResponse)
-      
-      /*
+
       case req @ POST -> Root / "waterMark" =>
         (for {
-          ticket <- req.as[String]
-          res   <- markDocs(ducmentMAp)?
+          input <- req.as[String]
+          ticket <- Task.now(Ticket(input.toInt))
+          // if ticket is processed then
+          res   <- Ok(watermarkedDocs(ticket).toString)
         } yield res).handleWith(errorResponse)
-      */
   }
 
   val executorService: ExecutorService = {

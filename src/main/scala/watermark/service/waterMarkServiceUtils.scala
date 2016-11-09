@@ -5,32 +5,8 @@ import scala.util.control.Breaks._
 import scalaz.concurrent.{Task, Strategy}
 import scalaz._, Scalaz._
 
-//import java.lang._
-//import scala.Predef._
-
 //TO Run this file
 //sbt waterMarkService.scala, then script: ....
-
-/*
- A global publishing company that publishes books and journals wants to develop
- a service to watermark their documents.
-
- -A document (books, journals) has a title, author and a watermark property. +
- -An empty watermark property indicates that the document has not been watermarked yet. +
- -Book publications include topics in business, science and media. +
- -Journals don’t include any specific topics. +
- -The watermark service has to be asynchronous. +
- -For a given content document the service should return a ticket
-  which can be used to poll the status of processing. +
- -If the watermarking is finished the document can be retrieved with the ticket. +
- -The watermark of a book or a journal is identified by setting the watermark property of the object. +
- -For a book the watermark includes the properties content, title, author and topic. +
- -The journal watermark includes the content, title and author. +
-
- Create an appropriate object-oriented model for the problem. +
- Implement the Watermark-Service, meeting the above conditions. +
- Provide Unit-Tests to ensure the functionality of the service. +
-*/
 
 object waterMarkServiceUtils {
   implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global
@@ -59,7 +35,7 @@ object waterMarkServiceUtils {
   var documentsMap = collection.immutable.Map[Ticket, Document]()
 
   //Creates a Document with an empty watermark.
-  def stringToDoc(s: String): Task[Document] = Task.delay {
+  def stringToDoc(s: java.lang.String): Task[Document] = Task.delay {
     s.split("\t") match {
       case Array(content, title, author, topic) => new Document(
         content,
@@ -73,7 +49,7 @@ object waterMarkServiceUtils {
         author,
         None,
         emptyW)
-      case x => println("parsing failed")
+      case x => new Document("","","", None, emptyW)
     }
   }
 
@@ -109,26 +85,25 @@ object waterMarkServiceUtils {
   }
 
   //Create waterMarks asynchronously.
-  def futureOfMap(d: Document, ticket: Ticket): Future[collection.immutable.Map[Ticket, Document]] = {
+  def futureOfDoc(d: Document, ticket: Ticket): Future[Document] = {
     val f: Future[Document] = Future { docWithWaterMark(d) }
     f.map { doc => watermarkedDocs = watermarkedDocs + (ticket -> doc)
-      watermarkedDocs
+      doc
     }
   }
 
   //Watermark each doc in the original Map.
-  def markDocs(m: collection.immutable.Map[Ticket, Document]): Unit = {
+  def markDocs(m: collection.immutable.Map[Ticket, Document]): Task[Unit] = Task.delay {
     m.foreach { case (ticket, doc) =>
-      futureOfMap(doc, ticket)
+      println()
+      futureOfDoc(doc, ticket)
     }
   }
 
-    val input = List(
+  val input = List(
       "book\tCosmos\tCarl Sagan\tScience",
       "journal\tThe Journal of cell biology\tRockefeller University Press",
       "book\tA brief history of time\tStephen W Hawking\tScience")
-
-    //markDocs(documentsMap)
 
 }
 
