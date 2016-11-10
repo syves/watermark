@@ -20,6 +20,7 @@ object waterMarkServer {
 
   val errorResponse: PartialFunction[Throwable, Task[Response]] = {
     case t =>
+    //for debugging!
       t.printStackTrace()
       InternalServerError(t.toString)
   }

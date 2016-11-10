@@ -4,12 +4,51 @@ import scala.concurrent._
 import scala.util.control.Breaks._
 import scalaz.concurrent.{Task, Strategy}
 import scalaz._, Scalaz._
-
-//TO Run this file
-//sbt waterMarkService.scala, then script: ....
+import akka.stream._
+import akka.stream.scaladsl._
+//do I need all of these?
+import akka.{ NotUsed, Done }
+import akka.actor.ActorSystem
+import akka.util.ByteString
+import scala.concurrent._
+import scala.concurrent.duration._
+import java.nio.file.Paths
 
 object waterMarkServiceUtils {
+
   implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global
+
+  implicit val system = ActorSystem("water-mark")
+  implicit val materializer = ActorMaterializer()
+
+  //how do we add the http requests to a stream?
+  /*
+  -A stream usually begins at a source, so this is also how we start
+  an Akka Stream
+  -The Source type is parameterized with two types: the first one is the
+   type of element that this source emits and the second one may signal
+    that running the source produces some auxiliary value
+*/
+  val documents: Source[String, Ticket]
+  //consumer function:
+  //val reqStream = documents.runForeach(req =>
+    stringToDoc(req) //task[Document]
+    genTicket(doc) //also saves to dic with empty watermark? in memory?
+    waterMark(doc) //and adds to another collection, could overwrite entry?
+
+
+  )(materializer)
+
+/*
+ IOResult is a type that IO operations return in Akka Streams in order
+ to tell you how many bytes or elements were consumed and whether the
+ stream terminated normally or exceptionally.
+ */
+  val result: Future[IOResult] =
+    reqStream
+      .map(...)
+      .runWith(save to dictionary?)
+
 
   //Constructors
   case class WaterMark(
@@ -27,8 +66,6 @@ object waterMarkServiceUtils {
 
   val emptyW = new WaterMark(None, None, None, None)
 
-  //All documents unprocessed or processed have a ticket ID, the ticket id from an
-  //unprocessed document matches it's watermarked version.
   case class Ticket(id: Int)
 
   var watermarkedDocs = collection.immutable.Map[Ticket, Document]()
@@ -64,13 +101,8 @@ object waterMarkServiceUtils {
     Ticket(ticketNum)
     }
 
-  //Use isProcessed to check if a single Document from the original queque has been processed.
-  def isProcessed(ticket: Ticket): Boolean = {
-    watermarkedDocs.contains(ticket)
-  }
-
   //Get a new Doc with a populated watermark.
-  def docWithWaterMark(l: Document): Document = l match {
+  def waterMark(l: Document): Document = l match {
     case Document(content, title, author, topic, WaterMark(_, _, _, _)) =>
       new Document(
         content,
@@ -86,34 +118,10 @@ object waterMarkServiceUtils {
 
   //Create waterMarks asynchronously.
   def futureOfDoc(d: Document, ticket: Ticket): Future[Document] = {
-    val f: Future[Document] = Future { docWithWaterMark(d) }
+    val f: Future[Document] = Future { waterMark(d) }
     f.map { doc => watermarkedDocs = watermarkedDocs + (ticket -> doc)
       doc
     }
   }
 
-  //Watermark each doc in the original Map.
-  def markDocs(m: collection.immutable.Map[Ticket, Document]): Task[Unit] = Task.delay {
-    m.foreach { case (ticket, doc) =>
-      println()
-      futureOfDoc(doc, ticket)
-    }
-  }
-
-  val input = List(
-      "book\tCosmos\tCarl Sagan\tScience",
-      "journal\tThe Journal of cell biology\tRockefeller University Press",
-      "book\tA brief history of time\tStephen W Hawking\tScience")
-
 }
-
-    /*
-    1.we get all the tickets currently in original map- queque
-    for each check if the Ticket exists in map of watermareked docs.
-
-    2. do we want to return the watermarked docs each time?
-    or a message if not done?
-
- 	  3. Stream continues to be processes-  we have to keep checking for new tickets
- 	  Q4..what happens when all the tickets are processed?
-    */
