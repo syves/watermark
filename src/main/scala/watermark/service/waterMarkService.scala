@@ -35,23 +35,23 @@ object waterMarkServer {
     case req @ POST -> Root / "ticket" =>
       (for {
         content <- req.as[String]
+        _       = println(content)
         doc     <- stringToDoc(content)
         ticket  <- genTicket(doc)
-        _       <- Task.now(storeDoc(doc, ticket))
+        _       <- storeDoc(doc, ticket)
         //add the doc to the stream
         //then run futureOfDoc inside the sink => Future[Doc]
-        //_       <- docStream(doc, ticket).offer(doc)
-        //how do we ingnore the output and return the ticket?
+        _       <- Task.now(docStream(doc, ticket).offer(doc))
         res     <- Ok(ticket.id.toString)
       } yield res).handleWith(errorResponse)
 
-      case req @ POST -> Root / "waterMark" =>
+      case req @ POST -> Root / "waterMark" / ticket =>
         (for {
-          input <- req.as[String]
-          ticket <- Task.now(Ticket(input.toInt))
+          //input <- req.as[String]
+          ticket0 <- Task.now(Ticket(ticket.toInt))
           // if Future[waterMark] has completed, then the user can retrieve a document
           // with a populated waterMark, otherwise they get the document with an empty waterMark.
-          res   <- Ok(documentsMap(ticket).toString)
+          res   <- Ok(documentsMap(ticket0).toString)
         } yield res).handleWith(errorResponse)
   }
 
@@ -62,7 +62,6 @@ object waterMarkServer {
   def createServer(svc: HttpService): Task[Server] =
     BlazeBuilder
       .bindHttp(8080, "0.0.0.0")
-      //.withIdleTimeout(300.seconds)
       .withServiceExecutor(executorService)
       .mountService(svc, "/")
       .start

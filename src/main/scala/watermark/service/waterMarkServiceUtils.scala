@@ -107,6 +107,7 @@ object waterMarkServiceUtils {
     val f: Future[Document] = Future { waterMark(d) }
     //When the future completes add the watermarked document to a new database.
     f.map { doc => documentsMap = documentsMap + (ticket -> doc)
+      println(doc)
       doc
     }
   }
