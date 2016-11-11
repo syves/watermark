@@ -26,6 +26,7 @@ var watermark = function(doc) {
     request({
       method: 'POST',
       url: 'http://localhost:8080/ticket',
+      body: doc,
       callback: function(err, res, ticket) {
         if (err == null) {
           resolve(ticket);
