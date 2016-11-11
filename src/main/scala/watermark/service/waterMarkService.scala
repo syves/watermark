@@ -37,12 +37,11 @@ object waterMarkServer {
         content <- req.as[String]
         doc     <- stringToDoc(content)
         ticket  <- genTicket(doc)
-        _       <- storeDoc(doc, ticket)
+        _       <- Task.now(storeDoc(doc, ticket))
         //add the doc to the stream
-        //then run futureOfDoc inside the sink => future of Doc
-        _       <- docStream.offer(doc)
-        //_ = futureOfDoc(doc, ticket)
-        //_ = println(documentsMap.toString)
+        //then run futureOfDoc inside the sink => Future[Doc]
+        //_       <- docStream(doc, ticket).offer(doc)
+        //how do we ingnore the output and return the ticket?
         res     <- Ok(ticket.id.toString)
       } yield res).handleWith(errorResponse)
 
@@ -80,8 +79,6 @@ object waterMarkServer {
   def main(args: Array[String]): Unit =  {
     //It is best to run your Task “at the end of the world.”
     serve.run
-    //client.shutdownNow()
-    //server.shutdownNow()
   }
 
   // Lifted from unfiltered Quasar open source library
