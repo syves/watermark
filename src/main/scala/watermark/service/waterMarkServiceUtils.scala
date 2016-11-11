@@ -1,27 +1,22 @@
 package watermark.service
 
 import scala.concurrent._
-import scala.util.control.Breaks._
-import scalaz.concurrent.{Task, Strategy}
-import scalaz._, Scalaz._
-import akka.stream._
-import akka.stream.OverflowStrategy
-import akka.stream.scaladsl._
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util._
-import akka.{ NotUsed, Done }
-import akka.actor.ActorSystem
 import scala.concurrent.duration._
 import akka.actor._
+import akka.actor.ActorSystem
+import akka.stream._
 import akka.stream.actor._
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.scaladsl._
+import akka.stream.scaladsl.{Sink, Source}
+import akka.util._
+import scalaz.concurrent.{Task, Strategy}
+import scalaz._, Scalaz._
 
 object waterMarkServiceUtils {
 
   implicit val system = ActorSystem("water-mark")
   implicit val materializer = ActorMaterializer()
-  //for akka futures
   import system.dispatcher
 
   val buffersize = 100
@@ -31,7 +26,6 @@ object waterMarkServiceUtils {
 
   //Materialize a SourceQueue onto which elements can be pushed for emitting from the source.
   def docStream(doc: Document, ticket: Ticket): SourceQueueWithComplete[Document] =
-    //SourceQueue.offer returns Future
     Source.queue(buffersize, overlfowStrategy)
       .to(Sink foreach((doc: Document) => futureOfDoc(doc, ticket)))
       .run()
@@ -53,10 +47,9 @@ object waterMarkServiceUtils {
 
   case class Ticket(id: Int)
 
-  //To represent a database of Documents that could be queried by TicketId.
+  //To represent a database of Documents that could be queried by Ticket.
   var documentsMap = collection.immutable.Map[Ticket, Document]()
 
-  //Creates a Document with an empty watermark.
   def stringToDoc(s: java.lang.String): Task[Document] = Task.delay {
     s.split("\t") match {
       case Array(content, title, author, topic) => new Document(
