@@ -18,8 +18,6 @@ object waterMarkServer {
 
   val errorResponse: PartialFunction[Throwable, Task[Response]] = {
     case t =>
-    //for debugging!
-      t.printStackTrace()
       InternalServerError(t.toString)
   }
 
@@ -38,11 +36,9 @@ object waterMarkServer {
         res     <- Ok(ticket.id.toString)
       } yield res).handleWith(errorResponse)
 
-      // If Future[waterMark] has completed, then the user can retrieve a document
-      // with a populated waterMark, otherwise they get the document with an empty waterMark.
-      case req @ POST -> Root / "waterMark" / ticket =>
-        Ok(documentsMap(Ticket(ticket.toInt)).toString)
-        //TODO getOrElse for ticket else error response
+      // If Future[waterMark] has completed, then the user can retrieve a watermarked document
+    case req @ POST -> Root / "waterMark" / ticket =>
+      Ok((documentsMap getOrElse (Ticket(ticket.toInt), "Ticket not found")).toString)
   }
 
   val executorService: ExecutorService = {
