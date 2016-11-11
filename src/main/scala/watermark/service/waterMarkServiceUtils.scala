@@ -24,11 +24,13 @@ object waterMarkServiceUtils {
   //the upstream publisher until space becomes available in the buffer.
   val overlfowStrategy = akka.stream.OverflowStrategy.backpressure
 
-  //Materialize a SourceQueue onto which elements can be pushed for emitting from the source.
-  def docStream(doc: Document, ticket: Ticket): SourceQueueWithComplete[Document] =
-    Source.queue(buffersize, overlfowStrategy)
-      .to(Sink foreach((doc: Document) => futureOfDoc(doc, ticket)))
-      .run()
+  //When using a real db, the db would create unique Id's for each document.
+  var nextTicketNum = 500
+
+  //To represent a database of Documents that could be queried by Ticket.
+  var documentsMap = collection.immutable.Map[Ticket, Document]()
+
+  val emptyW = new WaterMark(None, None, None, None)
 
   case class WaterMark(
     content: Option[String],
@@ -43,12 +45,7 @@ object waterMarkServiceUtils {
     topic: Option[String],
     watermark: WaterMark)
 
-  val emptyW = new WaterMark(None, None, None, None)
-
   case class Ticket(id: Int)
-
-  //To represent a database of Documents that could be queried by Ticket.
-  var documentsMap = collection.immutable.Map[Ticket, Document]()
 
   def stringToDoc(s: java.lang.String): Task[Document] = Task.delay {
     s.split("\t") match {
@@ -67,9 +64,6 @@ object waterMarkServiceUtils {
       case x => new Document("","","", None, emptyW)
     }
   }
-
-  //When using a real db, the db would create unique Id's for each document.
-  var nextTicketNum = 500
 
   def genTicket(doc: Document): Task[Ticket] = Task.delay {
     val ticketNum = nextTicketNum
@@ -103,4 +97,10 @@ object waterMarkServiceUtils {
       doc
     }
   }
+
+  //Materialize a SourceQueue onto which elements can be pushed for emitting from the source.
+  def docStream(doc: Document, ticket: Ticket): SourceQueueWithComplete[Document] =
+    Source.queue(buffersize, overlfowStrategy)
+      .to(Sink foreach((doc: Document) => futureOfDoc(doc, ticket)))
+      .run()
 }
