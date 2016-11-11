@@ -8,8 +8,6 @@ import org.http4s.MediaType._
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.client.blaze._
 import scalaz.concurrent.{Task, Strategy}
-//I may want to run as an app, automatic cleanup/shutdown
-import org.http4s.server.{Server, ServerApp}
 import org.http4s.dsl._
 import org.http4s._
 import org.http4s.Uri
@@ -35,7 +33,6 @@ object waterMarkServer {
     case req @ POST -> Root / "ticket" =>
       (for {
         content <- req.as[String]
-        _       = println(content)
         doc     <- stringToDoc(content)
         ticket  <- genTicket(doc)
         _       <- storeDoc(doc, ticket)
@@ -46,13 +43,10 @@ object waterMarkServer {
       } yield res).handleWith(errorResponse)
 
       case req @ POST -> Root / "waterMark" / ticket =>
-        (for {
-          //input <- req.as[String]
-          ticket0 <- Task.now(Ticket(ticket.toInt))
           // if Future[waterMark] has completed, then the user can retrieve a document
           // with a populated waterMark, otherwise they get the document with an empty waterMark.
-          res   <- Ok(documentsMap(ticket0).toString)
-        } yield res).handleWith(errorResponse)
+        Ok(documentsMap(Ticket(ticket.toInt)).toString)
+        //TODO getOrElse for ticket else error response
   }
 
   val executorService: ExecutorService = {
