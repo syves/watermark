@@ -26,46 +26,33 @@ object waterMarkServer {
   }
 
   val client = PooledHttp1Client()
-  //Task[String] represents the asynchronous nature of a client request.
-  val getTicket = client.expect[String]("http://localhost:8080/ticket")
-  val getWaterMark = client.expect[String]("http://localhost:8080/watermark")
 
-  //return a task of response?
   //HttpService is just a type alias for Kleisli[Task, Request, Response]
   val wms = HttpService {
     case GET -> Root =>
       Ok("Welcome to the watermark service!")
 
-    //I think we want to add the tickets to a stream, and process them/ get tickets a synchronously.
-    //but the id's are created for a single object? <- does this require syncronization?
-    //do I need to create a js client or should I use http4s?
-    //1. read http4s docs,
-    //2. akka sink
-    //create js script.
-
     case req @ POST -> Root / "ticket" =>
       (for {
         content <- req.as[String]
-        //event   <- addToStream(content)
-        doc <- stringToDoc(content)
-        ticket <- genTicket(doc)
-        //_ = println("2")
-        //## for each element in the stream ....
-        //_ = waterMark(doc)
-
-        //remove this later
-        _ = futureOfDoc(doc, ticket)
+        doc     <- stringToDoc(content)
+        ticket  <- genTicket(doc)
+        _       <- storeDoc(doc, ticket)
+        //add the doc to the stream
+        //then run futureOfDoc inside the sink => future of Doc
+        _       <- docStream.offer(doc)
+        //_ = futureOfDoc(doc, ticket)
         //_ = println(documentsMap.toString)
-        //_ = println(watermarkedDocs.toString)
-        res <- Ok(ticket.id.toString)
+        res     <- Ok(ticket.id.toString)
       } yield res).handleWith(errorResponse)
 
       case req @ POST -> Root / "waterMark" =>
         (for {
           input <- req.as[String]
           ticket <- Task.now(Ticket(input.toInt))
-          // if ticket is processed then
-          res   <- Ok(watermarkedDocs(ticket).toString)
+          // if Future[waterMark] has completed, then the user can retrieve a document
+          // with a populated waterMark, otherwise they get the document with an empty waterMark.
+          res   <- Ok(documentsMap(ticket).toString)
         } yield res).handleWith(errorResponse)
   }
 
