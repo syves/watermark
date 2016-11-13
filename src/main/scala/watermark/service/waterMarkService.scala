@@ -12,9 +12,18 @@ import org.http4s.server.{Server, ServerApp}
 import org.http4s.Uri
 import scalaz.concurrent.{Task, Strategy}
 import scalaz._, Scalaz._
+//import io.circe._
+//import io.circe.parser._
+//import io.circe.syntax._
+//import io.circe.generic.auto._
+import argonaut._
+//import org.http4s.argnonaut.Argonaut._
+//import org.http4s.argonaut.ArgonautShapeless._
+import org.http4s.argonaut._
 
 object waterMarkServer {
   import waterMarkServiceUtils._
+  import asyncUtils._
 
   val errorResponse: PartialFunction[Throwable, Task[Response]] = {
     case t =>
@@ -38,8 +47,9 @@ object waterMarkServer {
 
       // If Future[waterMark] has completed, then the user can retrieve a watermarked document
     case req @ POST -> Root / "waterMark" / ticket =>
-      Ok((documentsMap getOrElse (Ticket(ticket.toInt), "Ticket not found")).toString)
+      Ok(documentsMap.getOrElse(Ticket(ticket.toInt), "Ticket not found".toJson).fromEither.map[Document]((doc: Document) => doc.toJson))
   }
+  //if a and b are not of same type then resultant type will be nearest common super type which is java.io.Serializable in your case.
 
   val executorService: ExecutorService = {
     Executors.newFixedThreadPool(math.max(4, Runtime.getRuntime.availableProcessors), Strategy.DefaultDaemonThreadFactory)

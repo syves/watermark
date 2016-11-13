@@ -1,31 +1,15 @@
 package watermark.service
 
 import scala.concurrent._
-import scala.concurrent.duration._
-import akka.actor._
-import akka.actor.ActorSystem
-import akka.stream._
-import akka.stream.actor._
-import akka.stream.{ActorMaterializer, OverflowStrategy}
-import akka.stream.scaladsl._
-import akka.stream.scaladsl.{Sink, Source}
-import akka.util._
 import scalaz.concurrent.{Task, Strategy}
 import scalaz._, Scalaz._
+//import io.circe._
+//import io.circe.parser._
+//import io.circe.syntax._
+//import io.circe.generic.auto._
+
 
 object waterMarkServiceUtils {
-
-  implicit val system = ActorSystem("water-mark")
-  implicit val materializer = ActorMaterializer()
-  import system.dispatcher
-
-  val buffersize = 100
-  //If the buffer is full when a new element is available this strategy backpressures
-  //the upstream publisher until space becomes available in the buffer.
-  val overlfowStrategy = akka.stream.OverflowStrategy.backpressure
-
-  //When using a real db, the db would create unique Id's for each document.
-  var nextTicketNum = 500
 
   //To represent a database of Documents that could be queried by Ticket.
   var documentsMap = collection.immutable.Map[Ticket, Document]()
@@ -47,6 +31,15 @@ object waterMarkServiceUtils {
 
   case class Ticket(id: Int)
 
+  //Document codec
+  //implicit val decodeDocument: Decoder[Document] =
+   //Decoder.forProduct3("id", "first_name", "last_name")(User.apply)
+
+  //implicit val encodeDocument: Encoder[Document] =
+   //Encoder.forProduct4("content", "title", "author", "topic")(doc =>
+     //(doc.watermark.content, doc.watermark.title, doc.watermark.author, doc.watermark.topic)
+   //)
+
   def stringToDoc(s: java.lang.String): Task[Document] = Task.delay {
     s.split("\t") match {
       case Array(content, title, author, topic) => new Document(
@@ -66,9 +59,9 @@ object waterMarkServiceUtils {
   }
 
   def genTicket(doc: Document): Task[Ticket] = Task.delay {
-    val ticketNum = nextTicketNum
-    nextTicketNum += 1
-    Ticket(ticketNum)
+    //I'm using the document hashCode to simulate uniqiue id tat would be created by a db.
+    //And to avoid race conditions on a global variable.
+    Ticket(doc.hashCode)
     }
 
   def storeDoc(doc: Document, ticket: Ticket): Task[Unit] = Task.delay {
@@ -88,19 +81,4 @@ object waterMarkServiceUtils {
         Some(author),
         topic))
   }
-
-  //Create waterMarked document asynchronously.
-  def futureOfDoc(d: Document, ticket: Ticket): Future[Document] = {
-    val f: Future[Document] = Future { waterMark(d) }
-    //When the future completes add the watermarked document to a new database.
-    f.map { doc => documentsMap = documentsMap + (ticket -> doc)
-      doc
-    }
-  }
-
-  //Materialize a SourceQueue onto which elements can be pushed for emitting from the source.
-  def docStream(doc: Document, ticket: Ticket): SourceQueueWithComplete[Document] =
-    Source.queue(buffersize, overlfowStrategy)
-      .to(Sink foreach((doc: Document) => futureOfDoc(doc, ticket)))
-      .run()
 }
