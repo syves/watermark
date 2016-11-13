@@ -9,3 +9,5 @@ Two disclaimers:
 1. I wrote this in a fairly functional style because that is what I have been doing. I'm open to other styles!
 I thought you might enjoy seeing how this would be done with a type safe server.
 2. This is my first attempt at using Akka. I look forward to learning more about it! It has been fun!
+
+okay three... This is not as good as code that would be in production, partially because it has had no peer review!
