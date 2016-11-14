@@ -143,18 +143,6 @@ class waterMarkSpec extends AsyncFlatSpec {
         assert(actual == expected)
       }
 
-  def genTicket(doc: Document): Task[Ticket] = Task.delay {
-    val ticketNum = nextTicketNum
-    nextTicketNum += 1
-    Ticket(ticketNum)
-  }
-
-  "genTicket" should "immediately returns a ticket" in {
-    val actual = genTicket(documents(1)).run
-    val expected = Ticket(500)
-    assert(actual == expected)
-  }
-
   def futureOfDoc(d: Document, ticket: Ticket): Future[Document] = {
     val f: Future[Document] = Future { waterMark(d) }
     f.map { doc => documentsMap = documentsMap + (ticket -> doc)

@@ -1,5 +1,5 @@
 lazy val http4sVersion = "0.14.11"
-libraryDependencies += "org.scalatest" % "scalatest_2.11" % "3.0.0" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test"
 libraryDependencies += "org.http4s" %% "http4s-blaze-server" % http4sVersion
 libraryDependencies += "org.http4s" %% "http4s-dsl"          % http4sVersion
 libraryDependencies += "org.http4s" %% "http4s-blaze-client" % http4sVersion
