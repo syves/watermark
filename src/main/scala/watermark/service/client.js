@@ -46,6 +46,7 @@ var retrieve = function(ticket) {
       method: 'POST',
       url: 'http://localhost:8080/waterMark/' + ticket,
       callback: function(err, res, doc) {
+        console.log(res.statusCode)
         if (err == null) {
           resolve(doc);
         } else {

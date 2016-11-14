@@ -2,7 +2,12 @@ package watermark.service
 
 import java.util.concurrent.{ExecutorService, ThreadFactory, Executors}
 import scala.concurrent.duration._
+import argonaut._
+import argonaut.Argonaut._
+import argonaut.ArgonautShapeless._
+import org.http4s.argonaut._
 import org.http4s._
+
 import org.http4s.client.blaze._
 import org.http4s.dsl._
 import org.http4s.headers.`Content-Type`
@@ -12,14 +17,6 @@ import org.http4s.server.{Server, ServerApp}
 import org.http4s.Uri
 import scalaz.concurrent.{Task, Strategy}
 import scalaz._, Scalaz._
-//import io.circe._
-//import io.circe.parser._
-//import io.circe.syntax._
-//import io.circe.generic.auto._
-import argonaut._
-//import org.http4s.argnonaut.Argonaut._
-//import org.http4s.argonaut.ArgonautShapeless._
-import org.http4s.argonaut._
 
 object waterMarkServer {
   import waterMarkServiceUtils._
@@ -47,9 +44,14 @@ object waterMarkServer {
 
       // If Future[waterMark] has completed, then the user can retrieve a watermarked document
     case req @ POST -> Root / "waterMark" / ticket =>
-      Ok(documentsMap.getOrElse(Ticket(ticket.toInt), "Ticket not found".toJson).fromEither.map[Document]((doc: Document) => doc.toJson))
+    //(for {
+      //opDoc <- documentsMap.get(Ticket(ticket.toInt)) //why option[Nothing]
+      //json  <- encode(opDoc).nospaces
+      //res   <- Ok(json.toString)
+    //} yield res)//.handleWith(errorResponse)
+      documentsMap.get(Ticket(ticket.toInt)).map((x) => Ok(encode(x).nospaces)).getOrElse(NotFound("Ticket not Found"))
+      //Ok((documentsMap.get(Ticket(ticket.toInt)) \/> ("Ticket not found")).map((doc: Document) => encodeW(doc.watermark).nospaces))
   }
-  //if a and b are not of same type then resultant type will be nearest common super type which is java.io.Serializable in your case.
 
   val executorService: ExecutorService = {
     Executors.newFixedThreadPool(math.max(4, Runtime.getRuntime.availableProcessors), Strategy.DefaultDaemonThreadFactory)

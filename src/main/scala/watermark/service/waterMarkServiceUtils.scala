@@ -3,11 +3,11 @@ package watermark.service
 import scala.concurrent._
 import scalaz.concurrent.{Task, Strategy}
 import scalaz._, Scalaz._
-//import io.circe._
-//import io.circe.parser._
-//import io.circe.syntax._
-//import io.circe.generic.auto._
-
+import argonaut._
+import argonaut.Argonaut._
+import argonaut.ArgonautShapeless._
+import org.http4s.argonaut._
+import org.http4s._
 
 object waterMarkServiceUtils {
 
@@ -31,14 +31,8 @@ object waterMarkServiceUtils {
 
   case class Ticket(id: Int)
 
-  //Document codec
-  //implicit val decodeDocument: Decoder[Document] =
-   //Decoder.forProduct3("id", "first_name", "last_name")(User.apply)
-
-  //implicit val encodeDocument: Encoder[Document] =
-   //Encoder.forProduct4("content", "title", "author", "topic")(doc =>
-     //(doc.watermark.content, doc.watermark.title, doc.watermark.author, doc.watermark.topic)
-   //)
+  val encode = EncodeJson.of[Document]
+  val encodeW = EncodeJson.of[WaterMark]
 
   def stringToDoc(s: java.lang.String): Task[Document] = Task.delay {
     s.split("\t") match {
