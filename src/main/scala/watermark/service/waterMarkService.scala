@@ -7,7 +7,6 @@ import argonaut.Argonaut._
 import argonaut.ArgonautShapeless._
 import org.http4s.argonaut._
 import org.http4s._
-
 import org.http4s.client.blaze._
 import org.http4s.dsl._
 import org.http4s.headers.`Content-Type`
@@ -37,20 +36,14 @@ object waterMarkServer {
         doc     <- stringToDoc(content)
         ticket  <- genTicket(doc)
         _       <- storeDoc(doc, ticket)
-        //add the doc to the stream
+        //Add the doc to the stream
         _       <- Task.now(docStream(doc, ticket).offer(doc))
         res     <- Ok(ticket.id.toString)
       } yield res).handleWith(errorResponse)
 
-      // If Future[waterMark] has completed, then the user can retrieve a watermarked document
+    // If Future[waterMark] has completed, then the user can retrieve a watermarked document
     case req @ POST -> Root / "waterMark" / ticket =>
-    //(for {
-      //opDoc <- documentsMap.get(Ticket(ticket.toInt)) //why option[Nothing]
-      //json  <- encode(opDoc).nospaces
-      //res   <- Ok(json.toString)
-    //} yield res)//.handleWith(errorResponse)
       documentsMap.get(Ticket(ticket.toInt)).map((x) => Ok(encode(x).nospaces)).getOrElse(NotFound("Ticket not Found"))
-      //Ok((documentsMap.get(Ticket(ticket.toInt)) \/> ("Ticket not found")).map((doc: Document) => encodeW(doc.watermark).nospaces))
   }
 
   val executorService: ExecutorService = {

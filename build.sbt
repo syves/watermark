@@ -13,13 +13,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-testkit"   % "2.4.12" % "tes
 libraryDependencies += "io.argonaut" %% "argonaut" % "6.2-M3"
 //Note that the 6.2 development stream supports scala 2.10.* and 2.11.* with scalaz 7.2.*.
 
-//libraryDependencies += "io.argonaut" %% "argonaut" % "6.1"
 libraryDependencies += "org.http4s" %% "http4s-argonaut" % http4sVersion
 libraryDependencies += "com.github.alexarchambault" %% "argonaut-shapeless_6.2" % "1.2.0-M3"
-//libraryDependencies += "org.http4s" %% "http4s-circe" % "0.15.0a-SNAPSHOT"
-//libraryDependencies += "io.circe" %% "circe-core" % "0.6.0"
-//libraryDependencies +=  "io.circe" %% "circe-generic" % "0.6.0"
-//libraryDependencies +=  "io.circe" %% "circe-parser" % "0.6.0"
 
 resolvers ++= Seq(Resolver.sonatypeRepo("releases"), Resolver.sonatypeRepo("snapshots"))
 

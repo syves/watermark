@@ -13,8 +13,8 @@ object waterMarkServiceUtils {
 
   //To represent a database of Documents that could be queried by Ticket.
   var documentsMap = collection.immutable.Map[Ticket, Document]()
-
   val emptyW = new WaterMark(None, None, None, None)
+  val encode = EncodeJson.of[Document]
 
   case class WaterMark(
     content: Option[String],
@@ -30,9 +30,6 @@ object waterMarkServiceUtils {
     watermark: WaterMark)
 
   case class Ticket(id: Int)
-
-  val encode = EncodeJson.of[Document]
-  val encodeW = EncodeJson.of[WaterMark]
 
   def stringToDoc(s: java.lang.String): Task[Document] = Task.delay {
     s.split("\t") match {
