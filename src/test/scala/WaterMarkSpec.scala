@@ -2,13 +2,21 @@ import org.scalatest.AsyncFlatSpec
 import scala.collection.mutable.Map
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Success, Failure}
+import scalaz.concurrent.{Task, Strategy}
+import scalaz._, Scalaz._
 
-//TO run this file, from root of directory
-//sbt
-//run
-//test
+//sbt ~test
 
 class waterMarkSpec extends AsyncFlatSpec {
+
+  val emptyW = new WaterMark(None, None, None, None)
+  var documentsMap = collection.immutable.Map[Ticket, Document]()
+  var nextTicketNum = 500
+
+  val input = List(
+    "book\tCosmos\tCarl Sagan\tScience",
+    "journal\tThe Journal of cell biology\tRockefeller University Press",
+    "book\tA brief history of time\tStephen W Hawking\tScience")
 
   case class WaterMark(
     content: Option[String],
@@ -23,14 +31,7 @@ class waterMarkSpec extends AsyncFlatSpec {
     topic: Option[String],
     watermark: WaterMark)
 
-  val emptyW = new WaterMark(None, None, None, None)
-  var watermarkedDocs = collection.immutable.Map[Int, Document]()
-  var documentsMap = collection.immutable.Map[Int, Document]()
-
-  val input = List(
-    "book\tCosmos\tCarl Sagan\tScience",
-    "journal\tThe Journal of cell biology\tRockefeller University Press",
-    "book\tA brief history of time\tStephen W Hawking\tScience")
+  case class Ticket(id: Int)
 
   val documents = List[Document](
     Document("book", "Cosmos", "Carl Sagan", Some("Science"), emptyW),
@@ -42,27 +43,34 @@ class waterMarkSpec extends AsyncFlatSpec {
       emptyW),
     Document("book", "A brief history of time", "Stephen W Hawking", Some("Science"), emptyW))
 
-  //Tests below
+  //Tests below-------------------------------------------------------------------------------
 
-  //Converts initial input into unwatermarked documents
-  def stringToDoc(s: String): Document = {
-    val props = s.split("\t")
-    val content: String = props(0)
-    val title: String = props(1)
-    val author: String = props(2)
-    val topic: Option[String] = if (props.length == 3){ None } else { Some(props(3)) }
-    val watermark: WaterMark = emptyW
-    new Document(content, title, author, topic, watermark)
+  def stringToDoc(s: java.lang.String): Task[Document] = Task.delay {
+    s.split("\t") match {
+      case Array(content, title, author, topic) => new Document(
+        content,
+        title,
+        author,
+        Some(topic),
+        emptyW)
+      case Array(content, title, author) => new Document(
+        content,
+        title,
+        author,
+        None,
+        emptyW)
+      case x => new Document("","","", None, emptyW)
+    }
   }
 
   "stringToDoc" should "immediately creates a book Document with an empty watermark" in {
-    val actual = stringToDoc(input(0))
+    val actual = stringToDoc(input(0)).run
     val expected = Document("book", "Cosmos", "Carl Sagan", Some("Science"), emptyW)
     assert(actual == expected)
   }
 
   "stringToDoc" should "immediately creates a journal Document with an empty watermark" in {
-    val actual = stringToDoc(input(1))
+    val actual = stringToDoc(input(1)).run
     val expected = Document(
       "journal",
       "The Journal of cell biology",
@@ -71,8 +79,13 @@ class waterMarkSpec extends AsyncFlatSpec {
     assert(actual == expected)
   }
 
-  //Creates a new document with a watermark
-  def docWithWaterMark(l: Document): Document = l match {
+  "stringToDoc" should "immediately return an empty doc if imput is bad" in {
+    val actual = stringToDoc("angry cat").run
+    val expected = Document("", "", "", None, emptyW)
+    assert(actual == expected)
+  }
+
+  def waterMark(l: Document): Document = l match {
     case Document(content, title, author, topic, WaterMark(_, _, _, _)) => new Document(
       content,
       title,
@@ -85,8 +98,8 @@ class waterMarkSpec extends AsyncFlatSpec {
       topic))
   }
 
-  "docWithWaterMark" should "immediately creates a document with a Watermark for a book" in {
-    val actual = docWithWaterMark(documents(0))
+  "waterMark" should "immediately creates a document with a Watermark for a book" in {
+    val actual = waterMark(documents(0))
     val expected: Document = new Document(
       "book",
       "Cosmos",
@@ -100,8 +113,8 @@ class waterMarkSpec extends AsyncFlatSpec {
     assert(actual == expected)
   }
 
-  "docWithWaterMark" should "immediately creates a document with a WaterMark for a journal" in {
-    val actual = docWithWaterMark(documents(1))
+  "waterMark" should "immediately creates a document with a WaterMark for a journal" in {
+    val actual = waterMark(documents(1))
     val expected: Document = new Document(
       "journal",
       "The Journal of cell biology",
@@ -115,8 +128,8 @@ class waterMarkSpec extends AsyncFlatSpec {
     assert(actual == expected)
   }
 
-  "docWithWaterMark" should "immediately creates a document with a Watermark for a book2" in {
-    val actual = docWithWaterMark(documents(2))
+  "waterMark" should "immediately creates a document with a Watermark for a book2" in {
+    val actual = waterMark(documents(2))
     val expected: Document = new Document(
       "book",
       "A brief history of time",
@@ -130,44 +143,17 @@ class waterMarkSpec extends AsyncFlatSpec {
         assert(actual == expected)
       }
 
-  def genTicketAndDoc(s: String): Int = {
-    val ticket = 6666
-    val doc = stringToDoc(s)
-    documentsMap = documentsMap + (ticket -> doc)
-    ticket
-    }
-
-  "genTicketAndDoc" should "immediately returns a ticket" in {
-    var documentsMap = collection.immutable.Map[Int, Document]()
-    val actual = genTicketAndDoc(input(2))
-    val expected = 6666
-    assert(actual == expected)
-  }
-
-  def isProcessed(ticket: Int): Boolean = {
-    watermarkedDocs.contains(ticket)
-  }
-
-  "isProcessed" should "immediately returns a Boolean" in {
-    var documentsMap = collection.immutable.Map[Int, Document]()
-    genTicketAndDoc(input(2))
-    val actual = isProcessed(6666)
-    val expected = false
-    assert(actual == expected)
-  }
-
-  def futureOfMap(d: Document, ticket: Int): Future[collection.immutable.Map[Int, Document]] = {
-    val f: Future[Document] = Future { docWithWaterMark(d) }
-    f.map { doc => watermarkedDocs = watermarkedDocs + (ticket -> doc)
-      watermarkedDocs
+  def futureOfDoc(d: Document, ticket: Ticket): Future[Document] = {
+    val f: Future[Document] = Future { waterMark(d) }
+    f.map { doc => documentsMap = documentsMap + (ticket -> doc)
+      doc
     }
   }
 
-  behavior of "futureOfWaterMark"
+  behavior of "futureOfDoc"
 
-  it should "eventually return Future of Map of ticket, Document" in {
-    var watermarkedDocs = collection.immutable.Map[Int, Document]()
-    val expected = collection.immutable.Map[Int, Document](8888 -> Document(
+  it should "eventually return Future of Document" in {
+    val expected = Document(
         "book",
         "A brief history of time",
         "Stephen W Hawking",
@@ -176,8 +162,8 @@ class waterMarkSpec extends AsyncFlatSpec {
           Some("book"),
           Some("A brief history of time"),
           Some("Stephen W Hawking"),
-          Some("Science"))))
-    val futureWaterMark = futureOfMap(documents(2), 8888)
-    futureWaterMark map { waterMap => assert(waterMap == expected)}
+          Some("Science")))
+    val futureWaterMark = futureOfDoc(documents(2), Ticket(502))
+    futureWaterMark map { futureDoc => assert(futureDoc == expected)}
   }
 }
