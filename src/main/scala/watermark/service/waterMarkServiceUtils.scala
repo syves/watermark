@@ -52,6 +52,7 @@ object waterMarkServiceUtils {
   def genTicket(doc: Document): Task[Ticket] = Task.delay {
     //I'm using the document hashCode to simulate uniqiue id tat would be created by a db.
     //And to avoid race conditions on a global variable.
+    //looks like I can try using an atomic integer or syncronizing on an object containing the val?
     Ticket(doc.hashCode)
     }
 

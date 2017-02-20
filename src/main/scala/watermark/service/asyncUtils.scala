@@ -25,19 +25,19 @@ object asyncUtils {
   val overlfowStrategy = akka.stream.OverflowStrategy.backpressure
 
   //Create waterMarked document asynchronously.
-  def futureOfDoc(d: Document, ticket: Ticket): Future[Document] = {
-    val f: Future[Document] = Future { waterMark(d) }
-    //When the future completes add the watermarked document to a new database.
-    f.map { doc => documentsMap = documentsMap + (ticket -> doc)
-      println(ticket, doc.title)
-      doc
-    }
+  //refactored -moved create new map into doc stream.
+  def futureOfDoc(d: Document): Future[Document] = {
+    Future { waterMark(d) }
   }
 
   //Materialize a SourceQueue onto which elements can be pushed for emitting from the source.
   def docStream(doc: Document, ticket: Ticket): SourceQueueWithComplete[Document] =
     Source.queue(buffersize, overlfowStrategy)
-      .to(Sink foreach((doc: Document) => futureOfDoc(doc, ticket)))
+      //When the future completes add the watermarked document to a new database.
+      .to(Sink foreach((doc: Document) => futureOfDoc(doc).map { doc => documentsMap = documentsMap + (ticket -> doc)
+        //println(ticket, doc.title)
+        doc
+      }))
       .run()
 
 }
