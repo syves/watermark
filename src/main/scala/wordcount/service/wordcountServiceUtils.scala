@@ -9,12 +9,16 @@ import argonaut._
 
 object WordcountServiceUtils {
 
-  var wordsMap = collection.immutable.Map[String, Int]()
+  //var wordsMap = collection.immutable.Map[String, Int]()
+  var wordsMap = collection.mutable.Map[String, Int]()
   //val encode = EncodeJson.of[?]
 
-  def storeWord(word: String): Unit = {
-    if (wordsMap.contains(word)) wordsMap += (word -> (wordsMap(word) + 1).toString.toInt)
-    else wordsMap = wordsMap + (word -> 1)
+  def storeWord()(word: String, dict: collection.mutable.Map[String, Int]): Unit = {
+    this.synchronized {
+      if (dict.contains(word)) dict(word) = dict(word) + 1
+      else dict += (word -> 1)
+    }
+    println(dict)
   }
 
   def sortByOccur(dict: collection.immutable.Map[String, Int]): List[String] =

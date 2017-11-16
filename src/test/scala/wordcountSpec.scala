@@ -4,18 +4,15 @@ import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Success, Failure}
 import scalaz.concurrent.{Task, Strategy}
 import scalaz._, Scalaz._
-import WordcountServiceUtils._
-
-//sbt ~test
 
 class wordcountSpec extends AsyncFlatSpec {
-
+  import WordcountServiceUtils._
 
   "storeWord" should "immediately stores a word and increments if word is already present" in {
-      var wordsMap = collection.immutable.Map[String, Int]("cat" -> 1)
+      var wordsMap = collection.mutable.Map[String, Int]("cat" -> 1)
       val input = "cat"
-      storeWord(input)
-      val expected = collection.immutable.Map[String, Int]("cat" -> 2)
+      storeWord()(input, wordsMap)
+      val expected = collection.mutable.Map[String, Int]("cat" -> 2)
       assert(wordsMap == expected)
   }
   "strToWords" should "immediately converts a string of char into an unsorted list of words" in {
